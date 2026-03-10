@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toll Surveillance – Number Plate Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="navbar">
+            <div class="brand">🛣️ Toll Surveillance</div>
+            <div class="nav-right">
+                <span class="badge badge-live">Live</span>
+                <span class="badge badge-secure">Secure</span>
+            </div>
+        </div>
+        <header>
+            <h1>Number Plate Detection & Authenticity</h1>
+            <p>Optimized for toll surveillance uploads</p>
+        </header>
+
+     
+
+        <!-- Front-end only: About Project (hidden when results show) -->
+      
+
+        <div class="upload-section">
+            <div class="upload-box" id="uploadBox">
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>Click to upload or drag and drop</p>
+                    <p class="file-hint">PNG, JPG, JPEG up to 16MB</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Processing image...</p>
+        </div>
+
+        <div id="results" class="results" style="display: none;">
+            <div class="result-header">
+                <h2>Detection Results</h2>
+            </div>
+
+            <div class="toll-section">
+                <div class="toll-card">
+                    <div class="toll-top">
+                        <div class="toll-title">Toll Gate Status</div>
+                        <div class="toll-meta">
+                            <span id="tollLane" class="toll-chip">Lane: 3</span>
+                            <span id="tollId" class="toll-chip">Toll ID: TS-102</span>
+                            <span id="tollTime" class="toll-chip">--:--:--</span>
+                        </div>
+                    </div>
+                    <div class="toll-display">
+                        <div id="tollIndicator" class="toll-indicator">
+                            <div class="gate-bar"></div>
+                            <div class="signal-light"></div>
+                            <div class="toll-text" id="tollText">Awaiting Check</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-image-container">
+                <img id="resultImage" src="" alt="Processed image">
+            </div>
+
+            <div class="plate-info">
+                <div class="plate-number">
+                    <span class="label">Detected Plate:</span>
+                    <span class="value plate-display" id="plateText">-</span>
+                </div>
+                <div class="plate-number">
+                    <span class="label">Owner Name:</span>
+                    <span class="value" id="ownerName">-</span>
+                </div>
+                <div class="plate-number">
+                    <span class="label">Registration Date:</span>
+                    <span class="value" id="registrationDate">-</span>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <h3>📋 Authenticity Analysis</h3>
+                <div class="analysis-grid">
+                    <div class="analysis-item">
+                        <span class="check-label">Format Valid</span>
+                        <span class="check-value" id="formatValid">-</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="check-label">Character Uniform</span>
+                        <span class="check-value" id="uniformity">-</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="check-label">Proper Spacing</span>
+                        <span class="check-value" id="spacing">-</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="check-label">Standard Font</span>
+                        <span class="check-value" id="font">-</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="check-label">Registered in DB</span>
+                        <span class="check-value" id="registered">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="confidence-section">
+                <h3>Overall Confidence</h3>
+                <div class="confidence-bar-container">
+                    <div class="confidence-bar" id="confidenceBar">
+                        <div class="confidence-fill" id="confidenceFill"></div>
+                    </div>
+                    <span class="confidence-text" id="confidenceText">0%</span>
+                </div>
+            </div>
+
+            <div class="verdict-section">
+                <div class="verdict" id="verdict">
+                    <h3 id="verdictTitle">-</h3>
+                    <p id="verdictDescription">-</p>
+                </div>
+            </div>
+
+            <button class="btn-reset" onclick="resetForm()">Analyze Another Image</button>
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            <p id="errorMessage"></p>
+        </div>
+        <div style="padding:40px; background:#f4f6fb; text-align:center;">
+
+  <h2 style="margin-bottom:30px;">System Description</h2>
+
+  <div style="display:flex; justify-content:center; gap:30px; flex-wrap:wrap;">
+
+    <div style="width:280px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+      <img src="https://cdn-icons-png.flaticon.com/512/2920/2920244.png" 
+           style="width:60px; margin-bottom:15px;">
+      <h3>Plate Detection</h3>
+      <p style="font-size:14px;">
+        Detects vehicle number plates using advanced object detection algorithms.
+      </p>
+    </div>
+
+    <div style="width:280px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+      <img src="https://cdn-icons-png.flaticon.com/512/3523/3523887.png" 
+           style="width:60px; margin-bottom:15px;">
+      <h3>OCR Extraction</h3>
+      <p style="font-size:14px;">
+        Extracts alphanumeric characters from detected number plates.
+      </p>
+    </div>
+
+    <div style="width:280px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+      <img src="https://cdn-icons-png.flaticon.com/512/1828/1828640.png" 
+           style="width:60px; margin-bottom:15px;">
+      <h3>Authenticity Check</h3>
+      <p style="font-size:14px;">
+        Verifies extracted plate number with secure database records.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+        <footer class="footer">
+            <div class="footer-inner">
+                <div>© Toll Surveillance System</div>
+                <div class="footer-meta">Optimized OCR • Fast Processing • Secure Upload</div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadBox = document.getElementById('uploadBox');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop functionality
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
+
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect({ target: { files: files } });
+            }
+        });
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0] || (e.target.files && e.target.files[0]);
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showError('Please upload an image file');
+                return;
+            }
+
+            if (file.size > 16 * 1024 * 1024) {
+                showError('File size must be less than 16MB');
+                return;
+            }
+
+            uploadFile(file);
+        }
+
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            hideAll();
+            loading.style.display = 'block';
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // If not JSON, read as text to see what we got
+                    return response.text().then(text => {
+                        throw new Error('Server returned non-JSON response. This might be an error page.');
+                    });
+                }
+            })
+            .then(data => {
+                loading.style.display = 'none';
+                if (data.error) {
+                    showError(data.error);
+                } else if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'No number plate detected');
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                showError('Error processing image: ' + err.message);
+                console.error('Error details:', err);
+            });
+        }
+
+        // Drag & drop support
+        const uploadArea = document.querySelector('.upload-area');
+        ['dragenter','dragover'].forEach(evt => {
+            uploadArea.addEventListener(evt, e => {
+                e.preventDefault(); e.stopPropagation();
+                uploadArea.classList.add('dragover');
+            });
+        });
+        ['dragleave','drop'].forEach(evt => {
+            uploadArea.addEventListener(evt, e => {
+                e.preventDefault(); e.stopPropagation();
+                uploadArea.classList.remove('dragover');
+            });
+        });
+        uploadArea.addEventListener('drop', e => {
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                fileInput.files = files;
+                uploadFile(files[0]);
+            }
+        });
+
+        function displayResults(data) {
+            // Hide front-end only section in results view
+            const frontendOnly = document.getElementById('frontendOnly');
+            if (frontendOnly) frontendOnly.style.display = 'none';
+            const projectAbout = document.getElementById('projectAbout');
+            if (projectAbout) projectAbout.style.display = 'none';
+
+            // Display image
+            document.getElementById('resultImage').src = 'data:image/jpeg;base64,' + data.image;
+            
+            // Display plate number
+            document.getElementById('plateText').textContent = data.plate_text;
+
+            // Display registry info (if available)
+            const registry = data.registry;
+            document.getElementById('ownerName').textContent = (registry && registry.owner_name) ? registry.owner_name : '-';
+            document.getElementById('registrationDate').textContent = (registry && registry.registration_date) ? registry.registration_date : '-';
+            
+            // Display analysis
+            const details = data.details;
+            document.getElementById('formatValid').innerHTML = details.format_valid 
+                ? '<span class="check-yes">✓ YES</span>' 
+                : '<span class="check-no">✗ NO</span>';
+            
+            document.getElementById('uniformity').innerHTML = details.uniformity.is_uniform
+                ? `<span class="check-yes">✓ YES</span> <span class="score">(Score: ${details.uniformity.score.toFixed(2)})</span>`
+                : `<span class="check-no">✗ NO</span> <span class="score">(Score: ${details.uniformity.score.toFixed(2)})</span>`;
+            
+            document.getElementById('spacing').innerHTML = details.spacing.is_proper
+                ? `<span class="check-yes">✓ YES</span> <span class="score">(Score: ${details.spacing.score.toFixed(2)})</span>`
+                : `<span class="check-no">✗ NO</span> <span class="score">(Score: ${details.spacing.score.toFixed(2)})</span>`;
+            
+            document.getElementById('font').innerHTML = details.font.is_standard
+                ? `<span class="check-yes">✓ YES</span> <span class="score">(Score: ${details.font.score.toFixed(2)})</span>`
+                : `<span class="check-no">✗ NO</span> <span class="score">(Score: ${details.font.score.toFixed(2)})</span>`;
+            
+            document.getElementById('registered').innerHTML = details.registered
+                ? '<span class="check-yes">✓ YES</span>'
+                : '<span class="check-no">✗ NO</span>';
+            
+            // Display confidence
+            const confidence = (data.confidence * 100).toFixed(1);
+            document.getElementById('confidenceText').textContent = confidence + '%';
+            document.getElementById('confidenceFill').style.width = confidence + '%';
+            
+            // Display verdict
+            const verdictDiv = document.getElementById('verdict');
+            const verdictTitle = document.getElementById('verdictTitle');
+            const verdictDescription = document.getElementById('verdictDescription');
+            
+            if (data.is_real) {
+                verdictDiv.className = 'verdict verdict-real';
+                verdictTitle.textContent = '🟢 VERDICT: REAL NUMBER PLATE';
+                verdictDescription.textContent = '✓ Plate is registered and passed all visual checks';
+            } else {
+                verdictDiv.className = 'verdict verdict-fake';
+                verdictTitle.textContent = '🔴 VERDICT: FAKE NUMBER PLATE';
+                if (details.registered) {
+                    verdictDescription.textContent = '✓ Plate is found in registry database ✗ However, it FAILED visual authenticity checks';
+                } else {
+                    verdictDescription.textContent = '✗ Plate is NOT found in registry database';
+                }
+            }
+
+            // Toll gate indicator
+            const tollIndicator = document.getElementById('tollIndicator');
+            const tollText = document.getElementById('tollText');
+            const now = new Date();
+            document.getElementById('tollTime').textContent = now.toLocaleTimeString();
+            if (data.is_real) {
+                tollIndicator.className = 'toll-indicator toll-open';
+                tollText.textContent = 'Gate Open – Vehicle Allowed';
+            } else {
+                tollIndicator.className = 'toll-indicator toll-closed';
+                tollText.textContent = 'Gate Closed – Manual Review';
+            }
+            
+            results.style.display = 'block';
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            error.style.display = 'block';
+            error.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideAll() {
+            results.style.display = 'none';
+            error.style.display = 'none';
+        }
+
+        function resetForm() {
+            fileInput.value = '';
+            hideAll();
+            const frontendOnly = document.getElementById('frontendOnly');
+            if (frontendOnly) frontendOnly.style.display = '';
+            const projectAbout = document.getElementById('projectAbout');
+            if (projectAbout) projectAbout.style.display = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

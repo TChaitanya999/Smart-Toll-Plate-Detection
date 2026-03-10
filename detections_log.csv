@@ -1,0 +1,2 @@
+id,timestamp_utc,location,plate_text,raw_plate,is_real,confidence
+1,2026-03-10T08:20:14+00:00Z,Unknown,MH 12 BG 7237,MH12BG7237,0,0.100000
